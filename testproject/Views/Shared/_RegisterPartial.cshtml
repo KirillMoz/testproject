@@ -1,0 +1,50 @@
+﻿@model testproject.ViewModels.RegisterViewModel
+
+<div class="registration-form">
+    <h4>Быстрая регистрация</h4>
+
+    <form asp-controller="Register" asp-action="Register" method="post">
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="mb-3">
+            <!-- Используйте asp-for для привязки к модели -->
+            <label asp-for="FirstName" class="form-label">Имя</label>
+            <input asp-for="FirstName" class="form-control" placeholder="Введите имя" />
+            <span asp-validation-for="FirstName" class="text-danger small"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="LastName" class="form-label">Фамилия</label>
+            <input asp-for="LastName" class="form-control" placeholder="Введите фамилию" />
+            <span asp-validation-for="LastName" class="text-danger small"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Login" class="form-label">Никнейм</label>
+            <input asp-for="Login" class="form-control" placeholder="Введите никнейм" />
+            <span asp-validation-for="Login" class="text-danger small"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Email" class="form-label">Электронная почта</label>
+            <input asp-for="Email" class="form-control" placeholder="Введите email" />
+            <span asp-validation-for="Email" class="text-danger small"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Password" class="form-label">Пароль</label>
+            <input asp-for="Password" type="password" class="form-control" placeholder="Введите пароль" />
+            <span asp-validation-for="Password" class="text-danger small"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="PasswordConfirm" class="form-label">Повторите пароль</label>
+            <input asp-for="PasswordConfirm" type="password" class="form-control" placeholder="Повторите пароль" />
+            <span asp-validation-for="PasswordConfirm" class="text-danger small"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">Зарегистрироваться</button>
+    </form>
+</div>

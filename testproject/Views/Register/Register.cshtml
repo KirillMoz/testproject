@@ -1,0 +1,220 @@
+﻿@model testproject.ViewModels.RegisterViewModel
+
+@{
+    ViewData["Title"] = "Регистрация нового пользователя";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="text-center mb-0"><i class="bi bi-person-plus"></i> Регистрация</h2>
+                </div>
+                <div class="card-body p-4">
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>Произошла ошибка при регистрации.</strong>
+                            Пожалуйста, проверьте введенные данные.
+                        </div>
+                    }
+
+                    <form asp-action="Register" method="post" id="registerForm">
+                        @Html.AntiForgeryToken()
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <!-- Имя и Фамилия -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="FirstName" class="form-label fw-bold">Имя *</label>
+                                    <input asp-for="FirstName" class="form-control" placeholder="Введите имя" value="@Model.FirstName" />
+                                    <span asp-validation-for="FirstName" class="text-danger small"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="LastName" class="form-label fw-bold">Фамилия *</label>
+                                    <input asp-for="LastName" class="form-control" placeholder="Введите фамилию" value="@Model.LastName" />
+                                    <span asp-validation-for="LastName" class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Никнейм и Email -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="Login" class="form-label fw-bold">Никнейм *</label>
+                                    <input asp-for="Login" class="form-control" placeholder="Введите никнейм" value="@Model.Login" />
+                                    <span asp-validation-for="Login" class="text-danger small"></span>
+                                    <small class="text-muted">От 3 до 20 символов</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="Email" class="form-label fw-bold">Email *</label>
+                                    <input asp-for="Email" class="form-control" placeholder="example@mail.com" value="@Model.Email" />
+                                    <span asp-validation-for="Email" class="text-danger small"></span>
+                                    <small class="text-muted">Введите корректный email адрес</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Дата рождения -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Дата рождения *</label>
+                            <div class="row g-2">
+                                <div class="col-4">
+                                    <div class="form-group">
+                                        <label asp-for="Date" class="form-label small">День</label>
+                                        <input asp-for="Date" class="form-control" placeholder="День" min="1" max="31" value="@Model.Date" />
+                                        <span asp-validation-for="Date" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="form-group">
+                                        <label asp-for="Month" class="form-label small">Месяц</label>
+                                        <select asp-for="Month" class="form-select">
+                                            <option value="1" selected="@(Model.Month == 1)">Январь</option>
+                                            <option value="2" selected="@(Model.Month == 2)">Февраль</option>
+                                            <option value="3" selected="@(Model.Month == 3)">Март</option>
+                                            <option value="4" selected="@(Model.Month == 4)">Апрель</option>
+                                            <option value="5" selected="@(Model.Month == 5)">Май</option>
+                                            <option value="6" selected="@(Model.Month == 6)">Июнь</option>
+                                            <option value="7" selected="@(Model.Month == 7)">Июль</option>
+                                            <option value="8" selected="@(Model.Month == 8)">Август</option>
+                                            <option value="9" selected="@(Model.Month == 9)">Сентябрь</option>
+                                            <option value="10" selected="@(Model.Month == 10)">Октябрь</option>
+                                            <option value="11" selected="@(Model.Month == 11)">Ноябрь</option>
+                                            <option value="12" selected="@(Model.Month == 12)">Декабрь</option>
+                                        </select>
+                                        <span asp-validation-for="Month" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="form-group">
+                                        <label asp-for="Year" class="form-label small">Год</label>
+                                        <input asp-for="Year" class="form-control" placeholder="Год" min="1900" max="@DateTime.Now.Year" value="@Model.Year" />
+                                        <span asp-validation-for="Year" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <small class="text-muted">Для регистрации необходимо быть старше 13 лет</small>
+                        </div>
+
+                        <!-- Пароли -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="Password" class="form-label fw-bold">Пароль *</label>
+                                    <input asp-for="Password" type="password" class="form-control" placeholder="Введите пароль" />
+                                    <span asp-validation-for="Password" class="text-danger small"></span>
+                                    <small class="text-muted">Минимум 5 символов</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="PasswordConfirm" class="form-label fw-bold">Подтвердите пароль *</label>
+                                    <input asp-for="PasswordConfirm" type="password" class="form-control" placeholder="Повторите пароль" />
+                                    <span asp-validation-for="PasswordConfirm" class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Согласие -->
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="agreeTerms" required />
+                            <label class="form-check-label" for="agreeTerms">
+                                Я согласен с <a href="#" class="text-decoration-none">Условиями использования</a>
+                                и <a href="#" class="text-decoration-none">Политикой конфиденциальности</a>
+                            </label>
+                        </div>
+
+                        <!-- Кнопки -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg py-3">
+                                <i class="bi bi-person-check"></i> Зарегистрироваться
+                            </button>
+                            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="bi bi-house"></i> На главную
+                            </a>
+                        </div>
+                    </form>
+
+                    <div class="text-center mt-4 pt-3 border-top">
+                        <p class="mb-0">
+                            Уже есть аккаунт?
+                            <a asp-controller="Account" asp-action="Login" class="text-decoration-none fw-bold">
+                                <i class="bi bi-box-arrow-in-right"></i> Войти
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        $(document).ready(function() {
+            // Проверка возраста
+            function checkAge() {
+                var year = $('#Year').val();
+                var currentYear = new Date().getFullYear();
+                var age = currentYear - year;
+
+                if (age < 13) {
+                    $('#Year').addClass('is-invalid');
+                    return false;
+                } else if (age < 18) {
+                    $('#Year').addClass('is-warning');
+                    return true;
+                } else {
+                    $('#Year').removeClass('is-invalid is-warning').addClass('is-valid');
+                    return true;
+                }
+            }
+
+            $('#Year').on('change', checkAge);
+
+            // Проверка паролей в реальном времени
+            $('#PasswordConfirm').on('keyup', function() {
+                var password = $('#Password').val();
+                var confirm = $(this).val();
+
+                if (confirm.length > 0) {
+                    if (password === confirm) {
+                        $(this).removeClass('is-invalid').addClass('is-valid');
+                    } else {
+                        $(this).removeClass('is-valid').addClass('is-invalid');
+                    }
+                }
+            });
+
+            // Валидация формы
+            $('#registerForm').on('submit', function(e) {
+                var agree = $('#agreeTerms').is(':checked');
+                if (!agree) {
+                    e.preventDefault();
+                    alert('Пожалуйста, согласитесь с условиями использования');
+                    return false;
+                }
+
+                if (!checkAge()) {
+                    e.preventDefault();
+                    alert('Для регистрации необходимо быть старше 13 лет');
+                    return false;
+                }
+
+                return true;
+            });
+        });
+    </script>
+}
