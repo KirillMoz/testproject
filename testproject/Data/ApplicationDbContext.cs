@@ -1,29 +1,34 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using testproject.Models; // или testproject.Data.Entities
+using testproject.Models;
 
 namespace testproject.Data
 {
     public class ApplicationDbContext : IdentityDbContext<User>
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options): base(options)
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+            : base(options)
         {
-            Database.EnsureDeleted();
-            Database.EnsureCreated();
         }
 
-        protected override void OnModelCreating(ModelBuilder builder)
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(builder);
+            base.OnModelCreating(modelBuilder);
 
-            // Дополнительные настройки если нужны
-            builder.Entity<User>()
-                .Property(u => u.FirstName)
-                .HasMaxLength(100);
+            // Настройка таблицы Users
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Email).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.FirstName).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.LastName).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.PasswordHash).IsRequired();
+                entity.Property(e => e.RegistrationDate).IsRequired();
+                entity.Property(e => e.BirthDate).IsRequired();
 
-            builder.Entity<User>()
-                .Property(u => u.LastName)
-                .HasMaxLength(100);
+                // Делаем Email уникальным
+                entity.HasIndex(e => e.Email).IsUnique();
+            });
         }
     }
 }
