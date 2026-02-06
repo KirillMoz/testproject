@@ -1,0 +1,74 @@
+﻿@model testproject.ViewModels.RegisterViewModel
+@{
+    ViewData["Title"] = "Регистрация";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h2 class="text-center mb-4">Регистрация</h2>
+
+            <form asp-action="Register" method="post">
+                <div class="mb-3">
+                    <label asp-for="FirstName" class="form-label">Имя</label>
+                    <input asp-for="FirstName" class="form-control" placeholder="Введите имя">
+                    <span asp-validation-for="FirstName" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="LastName" class="form-label">Фамилия</label>
+                    <input asp-for="LastName" class="form-control" placeholder="Введите фамилию">
+                    <span asp-validation-for="LastName" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Email" class="form-label">Email</label>
+                    <input asp-for="Email" class="form-control" placeholder="example@mail.com">
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Password" class="form-label">Пароль</label>
+                    <input asp-for="Password" type="password" class="form-control" placeholder="Введите пароль">
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Дата рождения</label>
+                    <div class="row">
+                        <div class="col-4">
+                            <label asp-for="BirthDay" class="form-label">День</label>
+                            <input asp-for="BirthDay" class="form-control" type="number" min="1" max="31" placeholder="День">
+                            <span asp-validation-for="BirthDay" class="text-danger"></span>
+                        </div>
+                        <div class="col-4">
+                            <label asp-for="BirthMonth" class="form-label">Месяц</label>
+                            <input asp-for="BirthMonth" class="form-control" type="number" min="1" max="12" placeholder="Месяц">
+                            <span asp-validation-for="BirthMonth" class="text-danger"></span>
+                        </div>
+                        <div class="col-4">
+                            <label asp-for="BirthYear" class="form-label">Год</label>
+                            <input asp-for="BirthYear" class="form-control" type="number"
+                                   min="@(DateTime.Now.Year - 100)"
+                                   max="@DateTime.Now.Year"
+                                   placeholder="Год">
+                            <span asp-validation-for="BirthYear" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">Зарегистрироваться</button>
+            </form>
+
+            <div class="text-center mt-3">
+                <p>Уже есть аккаунт? <a href="@Url.Action("Index", "Home")">Войти</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
