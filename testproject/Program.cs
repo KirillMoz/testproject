@@ -42,6 +42,30 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
+app.MapControllerRoute(
+    name: "register",
+    pattern: "Register/{action=Index}",
+    defaults: new { controller = "Register" });
+
+app.MapControllerRoute(
+    name: "profile",
+    pattern: "Profile/{action=Index}/{id?}",
+    defaults: new { controller = "Profile" });
+
+app.MapControllerRoute(
+    name: "friends",
+    pattern: "Friends/{action=Index}",
+    defaults: new { controller = "Friends" });
+
+app.MapControllerRoute(
+    name: "messages",
+    pattern: "Messages/{action=Index}/{id?}",
+    defaults: new { controller = "Messages" });
+
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}");
+
 // Добавьте маршрут для Razor Pages
 app.MapRazorPages();
 

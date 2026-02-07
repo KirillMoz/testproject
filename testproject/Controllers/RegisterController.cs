@@ -11,16 +11,26 @@ using testproject.ViewModels;
 
 namespace testproject.Controllers
 {
+    /// <summary>
+    /// Контроллер для обработки регистрации пользователей
+    /// Отдельный от HomeController для разделения ответственности
+    /// </summary>
     public class RegisterController : Controller
     {
         private readonly ApplicationDbContext _context;
 
+        // Конструктор с Dependency Injection
         public RegisterController(ApplicationDbContext context)
         {
-            _context = context;
+            _context = context; // Получаем контекст базы данных
         }
 
-        public IActionResult Register()
+        /// <summary>
+        /// GET: /Register/Index
+        /// Показывает форму регистрации (альтернативный вариант)
+        /// В текущей реализации используется Home/Index
+        /// </summary>
+        public IActionResult Index()
         {
             var model = new AccountViewModel
             {
@@ -29,119 +39,146 @@ namespace testproject.Controllers
                 SelectLists = GetSelectLists()
             };
 
-            return View("~/Views/Home/Index.cshtml", model); 
+            return View(model);
         }
 
+        /// <summary>
+        /// POST: /Register/Register
+        /// Основной метод регистрации нового пользователя
+        /// </summary>
         [HttpPost]
-        [ValidateAntiForgeryToken]
+        [ValidateAntiForgeryToken] // Защита от CSRF-атак
         public IActionResult Register(RegisterViewModel model)
         {
+            // Проверяем валидность данных из формы
             if (ModelState.IsValid)
             {
-                // Проверка даты рождения
+                // Проверяем, что все компоненты даты рождения выбраны
                 if (!model.BirthYear.HasValue || !model.BirthMonth.HasValue || !model.BirthDay.HasValue)
                 {
                     ModelState.AddModelError("", "Выберите полную дату рождения");
+                    return ReturnToFormWithError(model);
                 }
-                else
+
+                try
                 {
-                    try
+                    // Создаем DateTime из отдельных компонентов
+                    var birthDate = new DateTime(model.BirthYear.Value, model.BirthMonth.Value, model.BirthDay.Value);
+
+                    // Проверяем возраст пользователя (должен быть 18+)
+                    var age = CalculateAge(birthDate);
+                    if (age < 18)
                     {
-                        var birthDate = new DateTime(model.BirthYear.Value, model.BirthMonth.Value, model.BirthDay.Value);
-
-                        // Проверка возраста (например, 18+)
-                        var age = DateTime.Now.Year - birthDate.Year;
-                        if (DateTime.Now < birthDate.AddYears(age)) age--;
-
-                        if (age < 18)
-                        {
-                            ModelState.AddModelError("", "Вам должно быть не менее 18 лет");
-                        }
-                        else
-                        {
-                            // Проверка email на уникальность
-                            var existingUser = _context.Users.FirstOrDefault(u => u.Email == model.Email);
-                            if (existingUser != null)
-                            {
-                                ModelState.AddModelError("Email", "Этот email уже зарегистрирован");
-                            }
-                            else
-                            {
-                                // Создание нового пользователя
-                                var user = new User
-                                {
-                                    FirstName = model.FirstName ?? string.Empty,
-                                    LastName = model.LastName ?? string.Empty,
-                                    Email = model.Email ?? string.Empty,
-                                    BirthDate = birthDate,
-                                    RegistrationDate = DateTime.Now,
-                                    PasswordHash = HashPassword(model.Password ?? string.Empty),
-                                    AvatarUrl = string.Empty,
-                                    Bio = string.Empty,
-                                    Location = string.Empty
-                                };
-
-                                _context.Users.Add(user);
-                                _context.SaveChanges();
-
-                                TempData["SuccessMessage"] = $"Регистрация прошла успешно, {model.FirstName}! Теперь вы можете войти.";
-                                return RedirectToAction("Index", "Home");
-                            }
-                        }
+                        ModelState.AddModelError("", "Вам должно быть не менее 18 лет");
+                        return ReturnToFormWithError(model);
                     }
-                    catch (ArgumentOutOfRangeException)
+
+                    // Проверяем, не зарегистрирован ли уже такой email
+                    if (IsEmailAlreadyRegistered(model.Email))
                     {
-                        ModelState.AddModelError("", "Некорректная дата рождения");
+                        ModelState.AddModelError("Email", "Этот email уже зарегистрирован");
+                        return ReturnToFormWithError(model);
                     }
+
+                    // Создаем нового пользователя
+                    var user = CreateUserFromModel(model, birthDate);
+
+                    // Сохраняем в базу данных
+                    SaveUserToDatabase(user);
+
+                    // Автоматически входим после успешной регистрации
+                    LoginUserAfterRegistration(user);
+
+                    // Перенаправляем на страницу профиля
+                    return RedirectToAction("Index", "Profile");
+                }
+                catch (ArgumentOutOfRangeException ex)
+                {
+                    // Обрабатываем некорректную дату (например, 30 февраля)
+                    ModelState.AddModelError("", $"Некорректная дата рождения: {ex.Message}");
+                    return ReturnToFormWithError(model);
+                }
+                catch (Exception ex)
+                {
+                    // Общая обработка ошибок
+                    ModelState.AddModelError("", $"Ошибка при регистрации: {ex.Message}");
+                    return ReturnToFormWithError(model);
                 }
             }
 
-            // Если есть ошибки, возвращаем на страницу с формой
-            var viewModel = new AccountViewModel
-            {
-                RegisterModel = model,
-                LoginModel = new LoginViewModel(),
-                SelectLists = GetSelectLists()
-            };
-
-            return View("~/Views/Home/Index.cshtml", viewModel);
+            // Если данные не валидны, возвращаем форму с ошибками
+            return ReturnToFormWithError(model);
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Login(LoginViewModel model)
+        // ==================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ====================
+
+        /// <summary>
+        /// Создает пользователя из модели регистрации
+        /// </summary>
+        private User CreateUserFromModel(RegisterViewModel model, DateTime birthDate)
         {
-            if (ModelState.IsValid)
+            return new User
             {
-                // Поиск пользователя по email
-                var user = _context.Users.FirstOrDefault(u => u.Email == model.Email);
-
-                if (user != null)
-                {
-                    // Проверка пароля
-                    if (VerifyPassword(model.Password ?? string.Empty, user.PasswordHash))
-                    {
-                        // Успешный вход
-                        TempData["SuccessMessage"] = $"Добро пожаловать, {user.FirstName}!";
-                        return RedirectToAction("Index", "Home");
-                    }
-                }
-
-                ModelState.AddModelError("", "Неверный email или пароль");
-            }
-
-            // Если есть ошибки, возвращаем на страницу с формой
-            var viewModel = new AccountViewModel
-            {
-                RegisterModel = new RegisterViewModel(),
-                LoginModel = model,
-                SelectLists = GetSelectLists()
+                FirstName = model.FirstName?.Trim() ?? "",
+                LastName = model.LastName?.Trim() ?? "",
+                Email = model.Email?.Trim()?.ToLower() ?? "", // Приводим email к нижнему регистру
+                BirthDate = birthDate,
+                RegistrationDate = DateTime.Now,
+                PasswordHash = HashPassword(model.Password ?? ""), // Хэшируем пароль
+                Bio = "",
+                Location = "",
+                Website = "",
+                AvatarUrl = "/images/default-avatar.png" // Аватар по умолчанию
             };
-
-            return View("~/Views/Home/Index.cshtml", viewModel);
         }
 
-        // Метод для хэширования пароля (SHA256)
+        /// <summary>
+        /// Сохраняет пользователя в базу данных
+        /// </summary>
+        private void SaveUserToDatabase(User user)
+        {
+            _context.Users.Add(user);
+            _context.SaveChanges(); // Сохраняем изменения в БД
+        }
+
+        /// <summary>
+        /// Выполняет автоматический вход после регистрации
+        /// </summary>
+        private void LoginUserAfterRegistration(User user)
+        {
+            // Сохраняем ID пользователя в сессии для аутентификации
+            HttpContext.Session.SetInt32("UserId", user.Id);
+            HttpContext.Session.SetString("UserName", user.FullName);
+            HttpContext.Session.SetString("UserEmail", user.Email);
+        }
+
+        /// <summary>
+        /// Вычисляет возраст пользователя по дате рождения
+        /// </summary>
+        private int CalculateAge(DateTime birthDate)
+        {
+            var today = DateTime.Today;
+            var age = today.Year - birthDate.Year;
+
+            // Корректируем возраст, если день рождения еще не наступил в этом году
+            if (birthDate.Date > today.AddYears(-age))
+                age--;
+
+            return age;
+        }
+
+        /// <summary>
+        /// Проверяет, зарегистрирован ли уже email
+        /// </summary>
+        private bool IsEmailAlreadyRegistered(string email)
+        {
+            return _context.Users.Any(u => u.Email.ToLower() == email.ToLower());
+        }
+
+        /// <summary>
+        /// Хэширует пароль с использованием SHA256
+        /// ВНИМАНИЕ: В реальных проектах используйте BCrypt, Argon2 или ASP.NET Core Identity!
+        /// </summary>
         private string HashPassword(string password)
         {
             if (string.IsNullOrEmpty(password))
@@ -149,36 +186,50 @@ namespace testproject.Controllers
 
             using (var sha256 = SHA256.Create())
             {
+                // Преобразуем пароль в байты и вычисляем хэш
                 var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+                // Конвертируем байты в base64 строку для хранения
                 return Convert.ToBase64String(hashedBytes);
             }
         }
 
-        // Метод для проверки пароля
-        private bool VerifyPassword(string inputPassword, string storedHash)
+        /// <summary>
+        /// Возвращает на форму с ошибками валидации
+        /// </summary>
+        private IActionResult ReturnToFormWithError(RegisterViewModel model)
         {
-            if (string.IsNullOrEmpty(inputPassword) || string.IsNullOrEmpty(storedHash))
-                return false;
+            var viewModel = new AccountViewModel
+            {
+                LoginModel = new LoginViewModel(),
+                RegisterModel = model,
+                SelectLists = GetSelectLists()
+            };
 
-            var inputHash = HashPassword(inputPassword);
-            return inputHash == storedHash;
+            return View("~/Views/Home/Index.cshtml", viewModel);
         }
 
+        /// <summary>
+        /// Генерирует списки для выбора даты рождения
+        /// </summary>
         private SelectListsViewModel GetSelectLists()
         {
             return new SelectListsViewModel
             {
-                Days = GetDays(),
-                Months = GetMonths(),
-                Years = GetYears()
+                Days = GenerateDaysList(),
+                Months = GenerateMonthsList(),
+                Years = GenerateYearsList()
             };
         }
 
-        private List<SelectListItem> GetYears()
+        /// <summary>
+        /// Генерирует список годов (текущий год - 100 лет)
+        /// </summary>
+        private List<SelectListItem> GenerateYearsList()
         {
             var years = new List<SelectListItem>();
             var currentYear = DateTime.Now.Year;
 
+            // Добавляем placeholder
             years.Add(new SelectListItem
             {
                 Value = "",
@@ -187,6 +238,7 @@ namespace testproject.Controllers
                 Disabled = true
             });
 
+            // Генерируем 100 последних лет
             for (int year = currentYear; year >= currentYear - 100; year--)
             {
                 years.Add(new SelectListItem
@@ -199,7 +251,10 @@ namespace testproject.Controllers
             return years;
         }
 
-        private List<SelectListItem> GetMonths()
+        /// <summary>
+        /// Генерирует список месяцев
+        /// </summary>
+        private List<SelectListItem> GenerateMonthsList()
         {
             var months = new List<SelectListItem>
             {
@@ -230,7 +285,10 @@ namespace testproject.Controllers
             return months;
         }
 
-        private List<SelectListItem> GetDays()
+        /// <summary>
+        /// Генерирует список дней (1-31)
+        /// </summary>
+        private List<SelectListItem> GenerateDaysList()
         {
             var days = new List<SelectListItem>
             {
@@ -253,6 +311,57 @@ namespace testproject.Controllers
             }
 
             return days;
+        }
+
+        /// <summary>
+        /// Проверяет валидность даты рождения
+        /// </summary>
+        private bool IsValidBirthDate(int? day, int? month, int? year)
+        {
+            if (!day.HasValue || !month.HasValue || !year.HasValue)
+                return false;
+
+            try
+            {
+                var date = new DateTime(year.Value, month.Value, day.Value);
+                return date <= DateTime.Now; // Дата рождения не может быть в будущем
+            }
+            catch
+            {
+                return false; // Некорректная дата
+            }
+        }
+
+        /// <summary>
+        /// GET: /Register/CheckEmailAvailability
+        /// Проверяет доступность email (для AJAX запросов)
+        /// </summary>
+        [HttpGet]
+        public IActionResult CheckEmailAvailability(string email)
+        {
+            if (string.IsNullOrEmpty(email))
+                return Json(new { available = false, message = "Email не может быть пустым" });
+
+            var isAvailable = !_context.Users.Any(u => u.Email.ToLower() == email.ToLower());
+
+            return Json(new
+            {
+                available = isAvailable,
+                message = isAvailable ? "Email доступен" : "Email уже занят"
+            });
+        }
+
+        /// <summary>
+        /// GET: /Register/Success
+        /// Страница успешной регистрации (если нужна отдельная)
+        /// </summary>
+        public IActionResult Success()
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return RedirectToAction("Index", "Home");
+
+            return View();
         }
     }
 }
